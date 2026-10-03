@@ -1,13 +1,1501 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>virtual-interior</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DreamSpace — Virtual Interior Planner</title>
+<style>
+/* ──────────────────────────────────────────────────────────
+   CSS VARIABLES & RESET
+────────────────────────────────────────────────────────── */
+:root {
+  --primary:#b8893a; --primary-hover:#a07832; --primary-light:#b8893a18;
+  --bg:#faf9f7; --card:#ffffff; --border:#e8e3da; --border2:#f0ebe3;
+  --fg:#1a1714; --fg2:#6b6560; --fg3:#9b958e;
+  --red:#c0392b; --red-light:#c0392b18;
+  --radius:12px; --radius2:8px;
+  --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 24px rgba(0,0,0,.08);
+  --shadow2:0 2px 8px rgba(0,0,0,.04),0 8px 32px rgba(0,0,0,.1);
+  --font:'Inter',system-ui,sans-serif;
+  --serif:Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--fg)}
+img{display:block;max-width:100%}
+button{cursor:pointer;font-family:inherit;border:none;outline:none}
+input,textarea{font-family:inherit;outline:none}
+a{text-decoration:none;color:inherit}
+select{font-family:inherit;outline:none}
+
+/* ──────────────────────────────────────────────────────────
+   ROUTER — VIEWS
+────────────────────────────────────────────────────────── */
+.view{display:none;min-height:100vh}
+.view.active{display:flex;flex-direction:column}
+#view-design.active{height:100vh;overflow:hidden;min-height:0}
+
+/* ──────────────────────────────────────────────────────────
+   UTILITY CLASSES
+────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 20px;height:40px;border-radius:var(--radius2);font-weight:600;font-size:14px;transition:all .18s;cursor:pointer;border:none;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-hover)}
+.btn-outline{background:transparent;color:var(--fg);border:1.5px solid var(--border)}.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-ghost{background:transparent;color:var(--fg2)}.btn-ghost:hover{background:var(--border2);color:var(--fg)}
+.btn-danger{background:#fee2e2;color:var(--red)}.btn-danger:hover{background:#fecaca}
+.btn-lg{height:52px;padding:0 32px;font-size:16px;border-radius:var(--radius)}
+.btn-sm{height:32px;padding:0 12px;font-size:12px}
+.btn-icon{width:36px;height:36px;padding:0;border-radius:50%}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:var(--primary-light);color:var(--primary);border:1px solid #b8893a30;border-radius:999px;font-size:13px;font-weight:600}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius2);font-size:14px;background:var(--card);color:var(--fg);transition:border .15s}
+.input:focus{border-color:var(--primary)}
+.input.err{border-color:var(--red)}
+.err-msg{color:var(--red);font-size:12px;margin-top:4px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--fg)}
+.spin{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+.spin-dark{border-color:var(--border);border-top-color:var(--primary)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scrollbar-hide::-webkit-scrollbar{display:none}
+.scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
+
+/* ──────────────────────────────────────────────────────────
+   NAVBAR
+────────────────────────────────────────────────────────── */
+.navbar{position:sticky;top:0;z-index:40;background:rgba(250,249,247,.88);backdrop-filter:blur(16px);border-bottom:1.5px solid var(--border);box-shadow:0 1px 12px rgba(0,0,0,.04)}
+.navbar-inner{max-width:1280px;margin:0 auto;padding:0 24px;height:72px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
+.logo-icon{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#c8a96e);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;box-shadow:0 2px 8px #b8893a40;transition:transform .2s}
+.logo:hover .logo-icon{transform:scale(1.06)}
+.logo-text{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:-.5px;color:var(--fg)}
+.logo-text span{color:var(--primary)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.user-name{font-size:13px;font-weight:600;color:var(--fg2)}
+.lang-select{padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius2);font-size:13px;background:var(--card);color:var(--fg);cursor:pointer}
+
+/* ──────────────────────────────────────────────────────────
+   HOME PAGE
+────────────────────────────────────────────────────────── */
+.hero{position:relative;padding:80px 24px 128px;overflow:hidden;background:linear-gradient(135deg,var(--bg) 0%,#f0e8d8 100%)}
+.hero-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1400&q=70') center/cover no-repeat;opacity:.15}
+.hero-content{position:relative;max-width:680px;margin:0 auto 0 0;max-width:1280px}
+.hero-content-inner{max-width:600px}
+.hero h1{font-size:clamp(36px,6vw,64px);font-weight:800;line-height:1.1;letter-spacing:-1.5px;margin-bottom:20px}
+.hero p{font-size:18px;color:var(--fg2);line-height:1.6;margin-bottom:36px}
+.hero-btns{display:flex;flex-wrap:wrap;gap:12px}
+.features{padding:80px 24px;background:var(--card)}
+.features-inner{max-width:1280px;margin:0 auto}
+.features h2{font-size:32px;font-weight:700;text-align:center;margin-bottom:12px}
+.features-rule{width:80px;height:4px;background:var(--primary);border-radius:99px;margin:0 auto 56px}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px}
+.feature-card{padding:32px;border-radius:20px;background:var(--bg);border:1.5px solid var(--border);transition:all .25s;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.feature-card:hover{transform:translateY(-4px);box-shadow:var(--shadow2);border-color:var(--primary)}
+.feature-icon{width:60px;height:60px;border-radius:16px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;transition:transform .2s}
+.feature-card:hover .feature-icon{transform:scale(1.1)}
+.feature-card h3{font-size:18px;font-weight:700;margin-bottom:10px}
+.feature-card p{color:var(--fg2);line-height:1.6;font-size:14px}
+.footer{text-align:center;padding:32px;font-size:13px;color:var(--fg3);border-top:1.5px solid var(--border)}
+
+/* ──────────────────────────────────────────────────────────
+   AUTH PAGES
+────────────────────────────────────────────────────────── */
+.auth-grid{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+@media(max-width:900px){.auth-grid{grid-template-columns:1fr}.auth-photo{display:none!important}}
+.auth-left{display:flex;align-items:center;justify-content:center;padding:40px 24px;background:var(--bg)}
+.auth-form-wrap{width:100%;max-width:420px}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:48px;cursor:pointer}
+.auth-logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--primary),#c8a96e);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.auth-logo-text{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--fg)}
+.auth-logo-text span{color:var(--primary)}
+.auth-left h1{font-size:36px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.auth-left .subtitle{color:var(--fg2);font-size:15px;margin-bottom:32px}
+.auth-photo{position:relative;background:#1a1714;overflow:hidden}
+.auth-photo img{width:100%;height:100%;object-fit:cover;opacity:.85}
+.auth-photo-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),transparent)}
+.alert{padding:12px 16px;border-radius:var(--radius2);font-size:13px;font-weight:600;margin-bottom:20px}
+.alert-err{background:var(--red-light);color:var(--red);border:1px solid #c0392b20}
+.alert-ok{background:#d1fae518;color:#065f46;border:1px solid #065f4620}
+.auth-footer{margin-top:24px;text-align:center;font-size:13px;color:var(--fg2)}
+.auth-footer a{color:var(--primary);font-weight:600}
+.auth-footer a:hover{text-decoration:underline}
+
+/* ──────────────────────────────────────────────────────────
+   DASHBOARD
+────────────────────────────────────────────────────────── */
+.dash-main{max-width:1280px;margin:0 auto;padding:48px 24px}
+.dash-header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:48px}
+.dash-header h1{font-size:36px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.dash-header p{color:var(--fg2);font-size:16px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;margin-bottom:48px}
+.stat-card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:24px}
+.stat-icon{width:48px;height:48px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+.stat-card p{font-size:12px;font-weight:600;color:var(--fg2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.stat-card h3{font-size:32px;font-weight:800;color:var(--fg)}
+.section-title{font-size:22px;font-weight:700;margin-bottom:20px}
+.designs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.design-card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;transition:all .25s;cursor:pointer}
+.design-card:hover{border-color:var(--primary);box-shadow:var(--shadow2);transform:translateY(-2px)}
+.design-thumb{aspect-ratio:4/3;background:var(--border2);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--fg3)}
+.design-thumb img{width:100%;height:100%;object-fit:cover}
+.design-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .25s;display:flex;align-items:center;justify-content:center;gap:10px}
+.design-card:hover .design-overlay{opacity:1}
+.design-info{padding:18px}
+.design-info h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.design-info span{font-size:12px;color:var(--fg2)}
+.empty-state{text-align:center;padding:80px 24px;background:var(--card);border:2px dashed var(--border);border-radius:20px}
+.empty-icon{width:80px;height:80px;border-radius:50%;background:var(--border2);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 24px}
+.empty-state h3{font-size:20px;font-weight:700;margin-bottom:8px}
+.empty-state p{color:var(--fg2);margin-bottom:24px;font-size:15px}
+
+/* ──────────────────────────────────────────────────────────
+   DESIGN ROOM
+────────────────────────────────────────────────────────── */
+#view-design.active{flex-direction:column;height:100vh;overflow:hidden}
+.dr-toolbar{background:var(--card);border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:52px;gap:8px;flex-shrink:0;z-index:20}
+.dr-name{font-weight:700;font-size:14px;background:transparent;border:1.5px solid transparent;border-radius:8px;padding:6px 10px;color:var(--fg);min-width:0;max-width:200px;transition:border .15s}
+.dr-name:hover,.dr-name:focus{border-color:var(--border);background:var(--bg)}
+.dr-workspace{flex:1;display:flex;overflow:hidden;min-height:0}
+.dr-left{width:272px;flex-shrink:0;background:var(--card);border-right:1.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+@media(max-width:768px){.dr-left{display:none}}
+.dr-center{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#e8ddd0;background-image:radial-gradient(circle,#c8bdb2 1px,transparent 1px);background-size:20px 20px}
+.dr-right{width:224px;flex-shrink:0;background:var(--card);border-left:1.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+@media(max-width:900px){.dr-right{width:188px}}
+
+/* Panel header */
+.panel-header{padding:12px;border-bottom:1.5px solid var(--border);flex-shrink:0}
+.panel-title{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.mode-toggle{display:flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;font-size:11px;font-weight:700}
+.mode-btn{flex:1;padding:6px 8px;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s;color:var(--fg2);background:transparent}
+.mode-btn.active{background:var(--primary);color:#fff}
+.search-wrap{position:relative;margin-top:8px}
+.search-input{width:100%;padding:7px 32px 7px 32px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg)}
+.search-input:focus{border-color:var(--primary)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--fg3);pointer-events:none}
+.search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--fg3);font-size:14px;line-height:1;cursor:pointer}
+.cat-pills{display:flex;gap:6px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+.cat-pills::-webkit-scrollbar{display:none}
+.cat-pill{padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap;border:none;cursor:pointer;background:var(--border2);color:var(--fg2);transition:all .15s}
+.cat-pill.active{background:var(--primary);color:#fff}
+
+/* Furniture list */
+.furn-list{flex:1;overflow-y:auto;padding:8px}
+.furn-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;border:2px solid var(--border);background:var(--bg);margin-bottom:6px;cursor:grab;transition:all .15s;position:relative}
+.furn-item:hover{border-color:var(--primary);box-shadow:0 2px 8px rgba(184,137,58,.12)}
+.furn-item.selected{border-color:var(--primary);background:var(--primary-light)}
+.furn-icon-box{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;position:relative;border:1px solid rgba(0,0,0,.06)}
+.furn-color-dot{position:absolute;bottom:-4px;right:-4px;width:14px;height:14px;border-radius:50%;border:2px solid var(--card);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.furn-info{flex:1;min-width:0}
+.furn-name{font-size:12px;font-weight:700;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.furn-sub{font-size:10px;color:var(--fg2);margin-top:1px}
+.furn-qty{display:flex;align-items:center;gap:4px;margin-top:6px}
+.furn-qty button{width:18px;height:18px;border-radius:4px;background:var(--card);border:1px solid var(--border);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.furn-qty span{font-size:11px;font-weight:700;min-width:16px;text-align:center}
+.add-btn{flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:3px;transition:all .15s}
+.add-btn:hover{background:var(--primary-hover)}
+.chk-btn{width:28px;height:28px;border-radius:8px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;background:transparent;flex-shrink:0}
+.chk-btn.checked{background:var(--primary);border-color:var(--primary);color:#fff}
+.qty-badge{width:20px;height:20px;background:var(--primary);color:#fff;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.drag-hint{font-size:9px;color:var(--fg3)}
+.no-results{display:flex;flex-direction:column;align-items:center;justify-content:center;height:80px;color:var(--fg2);font-size:12px;gap:6px}
+
+/* Selection tray */
+.sel-tray{border-top:1.5px solid var(--border);flex-shrink:0;background:var(--card)}
+.tray-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer}
+.tray-header:hover{background:var(--border2)}
+.tray-label{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.tray-items{padding:0 12px 6px;max-height:120px;overflow-y:auto}
+.tray-row{display:flex;align-items:center;gap:8px;background:var(--border2);border-radius:8px;padding:6px 8px;margin-bottom:4px}
+.tray-row span:first-child{font-size:16px}
+.tray-row .tray-name{font-size:11px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tray-btns{flex-shrink:0;display:flex;align-items:center;gap:3px}
+.tray-btn{width:18px;height:18px;border-radius:4px;background:var(--card);border:1px solid var(--border);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tray-btn.rm{color:var(--red);border-color:transparent}
+.tray-actions{padding:8px 12px 12px;display:flex;gap:8px}
+
+/* Canvas */
+.room-canvas{position:relative;background:var(--bg);border-radius:12px;box-shadow:0 4px 40px rgba(0,0,0,.18);overflow:hidden;transition:box-shadow .2s}
+.room-canvas.drag-over{box-shadow:0 0 0 4px var(--primary),0 4px 40px rgba(0,0,0,.18)}
+.canvas-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;mix-blend-mode:multiply;opacity:.82;pointer-events:none}
+.canvas-floor{position:absolute;bottom:0;left:0;right:0;height:50%;pointer-events:none;z-index:1;transition:background .4s}
+.canvas-warm{position:absolute;inset:0;pointer-events:none;z-index:25;mix-blend-mode:overlay;transition:opacity .3s,background-color .3s}
+.drop-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:40;pointer-events:none}
+.drop-hint-box{background:rgba(184,137,58,.92);color:#fff;border-radius:16px;padding:20px 36px;text-align:center}
+.drop-hint-box p{font-weight:700;font-size:14px}
+.upload-prompt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:30}
+.upload-box{background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-radius:20px;padding:32px 28px;text-align:center;box-shadow:var(--shadow2);max-width:320px;width:90%;border:1.5px solid var(--border)}
+.upload-box .big-emoji{font-size:48px;margin-bottom:12px}
+.upload-box h3{font-size:17px;font-weight:800;margin-bottom:6px}
+.upload-box p{font-size:13px;color:var(--fg2);margin-bottom:24px;line-height:1.5}
+.upload-box .upload-btns{display:flex;flex-direction:column;gap:10px}
+.sample-link{background:none;border:none;font-size:12px;color:var(--fg2);text-decoration:underline;cursor:pointer;margin-top:8px}
+.sample-link:hover{color:var(--fg)}
+.mobile-furn-btn{position:absolute;bottom:16px;left:16px;display:none;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--border);box-shadow:var(--shadow2);border-radius:99px;padding:10px 18px;font-size:13px;font-weight:700;z-index:30;cursor:pointer}
+@media(max-width:768px){.mobile-furn-btn{display:flex}}
+
+/* Furniture items on canvas */
+.furn-placed{position:absolute;cursor:grab;user-select:none;touch-action:none;display:flex;align-items:center;justify-content:center;border-radius:12px;border:2px solid transparent;transition:box-shadow .15s,border-color .15s;flex-direction:column}
+.furn-placed:hover{box-shadow:0 4px 20px rgba(0,0,0,.18)}
+.furn-placed.selected{border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(184,137,58,.25),0 8px 32px rgba(0,0,0,.18)!important;z-index:20!important}
+.furn-label{font-size:10px;font-weight:700;padding:2px 8px;background:rgba(184,137,58,.85);color:#fff;border-radius:99px;margin-top:4px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.furn-toolbar{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:3px;display:flex;gap:2px;box-shadow:var(--shadow2);z-index:50;white-space:nowrap}
+.furn-tb-btn{width:28px;height:28px;border-radius:7px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--fg);transition:background .15s}
+.furn-tb-btn:hover{background:var(--border2)}
+.furn-tb-btn.del{color:var(--red)}.furn-tb-btn.del:hover{background:var(--red-light)}
+.furn-tb-sep{width:1px;background:var(--border);margin:2px 2px}
+.resize-handle{position:absolute;width:16px;height:16px;background:#fff;border:2px solid var(--primary);border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:30;cursor:nw-resize;display:flex;align-items:center;justify-content:center}
+.resize-handle::after{content:'';width:6px;height:6px;background:var(--primary);border-radius:2px}
+.rh-nw{top:-8px;left:-8px;cursor:nw-resize}
+.rh-ne{top:-8px;right:-8px;cursor:ne-resize}
+.rh-sw{bottom:-8px;left:-8px;cursor:sw-resize}
+.rh-se{bottom:-8px;right:-8px;cursor:se-resize}
+
+/* Right panel */
+.tabs{display:flex;border-bottom:1.5px solid var(--border);flex-shrink:0}
+.tab-btn{flex:1;padding:10px 4px;font-size:12px;font-weight:700;border:none;background:transparent;cursor:pointer;color:var(--fg2);border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all .15s}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);background:rgba(184,137,58,.04)}
+.right-body{flex:1;overflow-y:auto;padding:16px}
+.right-section{margin-bottom:20px}
+.right-section h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--fg2);margin-bottom:10px}
+.swatch-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.swatch{width:28px;height:28px;border-radius:8px;border:2.5px solid transparent;cursor:pointer;transition:all .15s}
+.swatch:hover{transform:scale(1.12)}
+.swatch.active{border-color:var(--primary);box-shadow:0 0 0 2px rgba(184,137,58,.25)}
+.color-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.color-row input[type=color]{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;padding:2px}
+.color-hex{flex:1;font-size:12px;font-family:monospace;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg)}
+.color-hex:focus{border-color:var(--primary)}
+.light-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.light-btn{padding:12px 8px;border-radius:12px;border:2px solid var(--border);background:transparent;cursor:pointer;font-size:12px;font-weight:700;color:var(--fg2);display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s}
+.light-btn .light-emoji{font-size:20px}
+.light-btn.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
+.slider-wrap{margin-bottom:16px}
+.slider-wrap .slider-label{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px}
+.slider-wrap .slider-label span:last-child{font-size:12px;color:var(--fg2)}
+input[type=range]{width:100%;accent-color:var(--primary)}
+.item-preview{background:var(--border2);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.item-preview .item-emoji{font-size:32px}
+.item-preview-info p{font-size:13px;font-weight:700}
+.item-preview-info span{font-size:11px;color:var(--fg2)}
+.size-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.size-ctrl{background:var(--border2);border-radius:10px;padding:8px}
+.size-ctrl p{font-size:10px;color:var(--fg2);margin-bottom:4px;font-weight:600}
+.size-ctrl-row{display:flex;align-items:center;gap:4px}
+.size-ctrl-row button{width:24px;height:24px;border-radius:6px;background:var(--card);border:1.5px solid var(--border);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.size-ctrl-row span{flex:1;text-align:center;font-size:12px;font-family:monospace;font-weight:700}
+.rot-row{display:flex;gap:6px;margin-top:8px}
+.no-item{text-align:center;padding:48px 16px;color:var(--fg2)}
+.no-item .no-emoji{font-size:36px;margin-bottom:12px}
+.no-item p{font-size:13px;font-weight:600;margin-bottom:4px}
+.no-item small{font-size:11px;color:var(--fg3);line-height:1.5}
+
+/* Mobile drawer */
+.drawer-overlay{position:fixed;inset:0;z-index:50;display:none;flex-direction:column}
+.drawer-overlay.open{display:flex}
+.drawer-bg{flex:1;background:rgba(0,0,0,.5)}
+.drawer-sheet{background:var(--card);border-radius:20px 20px 0 0;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 -4px 32px rgba(0,0,0,.2)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1.5px solid var(--border);flex-shrink:0}
+.drawer-head span{font-weight:700;font-size:15px}
+
+/* AI Panel */
+.ai-panel{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;width:100%;max-width:440px;padding:0 16px;pointer-events:none}
+.ai-card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;box-shadow:var(--shadow2);overflow:hidden;pointer-events:all}
+.ai-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1.5px solid var(--border);background:linear-gradient(to right,var(--primary-light),transparent)}
+.ai-head-left{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.ai-body{padding:16px}
+.ai-tip{font-size:13px;color:var(--fg2);line-height:1.55;margin-bottom:12px}
+.ai-palette-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--fg2);margin-bottom:8px}
+.ai-swatches{display:flex;align-items:center;gap:8px}
+.ai-swatch{width:36px;height:36px;border-radius:10px;border:2px solid var(--border);cursor:pointer;transition:all .15s;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.ai-swatch:hover{transform:scale(1.12);border-color:var(--primary)}
+.apply-btn{font-size:12px;font-weight:700;color:var(--primary);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px}
+.apply-btn:hover{background:var(--primary-light)}
+.ai-loading{display:flex;align-items:center;gap:12px;padding:8px 0}
+.ai-loading-text p{font-size:13px;font-weight:600}
+.ai-loading-text small{font-size:11px;color:var(--fg2)}
+
+/* Toast */
+.toast{position:fixed;top:80px;right:24px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:12px 18px;font-size:13px;font-weight:600;box-shadow:var(--shadow2);z-index:999;transform:translateX(120%);transition:transform .3s;display:flex;align-items:center;gap:8px}
+.toast.show{transform:none}
+.toast.ok{border-left:4px solid #10b981}
+.toast.err{border-left:4px solid var(--red)}
+
+/* ──────────────────────────────────────────────────────────
+   RESPONSIVE
+────────────────────────────────────────────────────────── */
+@media(max-width:640px){
+  .hero{padding:48px 16px 80px}
+  .hero h1{font-size:32px}
+  .features{padding:48px 16px}
+  .dash-main{padding:32px 16px}
+  .dash-header h1{font-size:28px}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     TOAST
+════════════════════════════════════════════════ -->
+<div id="toast" class="toast"></div>
+
+<!-- ════════════════════════════════════════════════
+     VIEW: HOME
+════════════════════════════════════════════════ -->
+<div id="view-home" class="view">
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a class="logo" onclick="nav('home')">
+        <div class="logo-icon">⬡</div>
+        <span class="logo-text">Dream<span>Space</span></span>
+      </a>
+      <div class="nav-right">
+        <select class="lang-select" onchange="setLang(this.value)">
+          <option value="en">🌐 EN</option><option value="hi">🇮🇳 HI</option>
+          <option value="es">🇪🇸 ES</option><option value="fr">🇫🇷 FR</option>
+          <option value="de">🇩🇪 DE</option>
+        </select>
+        <span id="hn-user" class="user-name" style="display:none"></span>
+        <button id="hn-dash" class="btn btn-ghost" style="display:none" onclick="nav('dashboard')">📋 Dashboard</button>
+        <button id="hn-out"  class="btn btn-outline btn-sm" style="display:none" onclick="doLogout()">Logout</button>
+        <button id="hn-login"  class="btn btn-ghost" onclick="nav('login')">Login</button>
+        <button id="hn-signup" class="btn btn-primary" onclick="nav('signup')">Get Started</button>
+      </div>
+    </div>
+  </nav>
+
+  <main style="flex:1">
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content" style="max-width:1280px;margin:0 auto;padding:0">
+        <div class="hero-content-inner">
+          <div class="tag" style="margin-bottom:20px">✨ Professional Virtual Studio</div>
+          <h1 id="hero-title">Design Your Dream Home</h1>
+          <p id="hero-subtitle">Visualize, furnish, and perfect your interior spaces with our professional virtual design studio.</p>
+          <div class="hero-btns">
+            <button class="btn btn-primary btn-lg" onclick="nav('signup')" id="btn-start">Start Designing Free</button>
+            <button class="btn btn-outline btn-lg" onclick="nav('login')" id="btn-login-h">Sign In</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="features-inner">
+        <h2>Everything You Need to Design</h2>
+        <div class="features-rule"></div>
+        <div class="features-grid">
+          <div class="feature-card"><div class="feature-icon">🛋️</div><h3>60+ Furniture Items</h3><p>10 categories — Sofas, Chairs, Beds, Tables, Storage, Lighting, Decor, Dining, Office & Outdoor. 6 design variants each.</p></div>
+          <div class="feature-card"><div class="feature-icon">🎨</div><h3>Color & Lighting Control</h3><p>Experiment with wall colors, floor tints, and 4 lighting presets — Day, Warm, Cool and Night — with brightness & warmth sliders.</p></div>
+          <div class="feature-card"><div class="feature-icon">📦</div><h3>Drag, Resize & Rotate</h3><p>Drag furniture from the library or panel, then move, resize with corner handles, and rotate items freely on your room canvas.</p></div>
+          <div class="feature-card"><div class="feature-icon">🤖</div><h3>AI Design Suggestions</h3><p>Upload your room photo and get instant AI-powered color palettes and design tips tailored to your space.</p></div>
+          <div class="feature-card"><div class="feature-icon">🌏</div><h3>Multi-Language</h3><p>Full support for English, Hindi (हिन्दी), Spanish (Español), French (Français) and German (Deutsch).</p></div>
+          <div class="feature-card"><div class="feature-icon">💾</div><h3>Save & Export</h3><p>All designs saved to your account. Export your final layout as a high-resolution PNG with one click.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">© 2026 DreamSpace — Virtual Interior Planner. College Project.</footer>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     VIEW: LOGIN
+════════════════════════════════════════════════ -->
+<div id="view-login" class="view">
+  <div class="auth-grid" style="flex:1">
+    <div class="auth-left">
+      <div class="auth-form-wrap">
+        <div class="auth-logo" onclick="nav('home')">
+          <div class="auth-logo-icon">⬡</div>
+          <span class="auth-logo-text">Dream<span>Space</span></span>
+        </div>
+        <h1>Welcome back</h1>
+        <p class="subtitle">Enter your credentials to access your designs.</p>
+        <div id="login-err" class="alert alert-err" style="display:none"></div>
+        <form onsubmit="doLogin(event)">
+          <div class="field"><label>Email</label><input class="input" id="li-email" type="email" placeholder="you@example.com" required></div>
+          <div class="field"><label>Password</label><input class="input" id="li-pass" type="password" placeholder="••••••••" required></div>
+          <button type="submit" class="btn btn-primary" style="width:100%;height:44px" id="li-btn">Sign in →</button>
+        </form>
+        <p class="auth-footer">Don't have an account? <a onclick="nav('signup')">Create one</a></p>
+      </div>
+    </div>
+    <div class="auth-photo">
+      <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=900&q=80" alt="Interior">
+      <div class="auth-photo-overlay"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     VIEW: SIGNUP
+════════════════════════════════════════════════ -->
+<div id="view-signup" class="view">
+  <div class="auth-grid" style="flex:1">
+    <div class="auth-left">
+      <div class="auth-form-wrap">
+        <div class="auth-logo" onclick="nav('home')">
+          <div class="auth-logo-icon">⬡</div>
+          <span class="auth-logo-text">Dream<span>Space</span></span>
+        </div>
+        <h1>Create an account</h1>
+        <p class="subtitle">Start designing beautiful interiors today.</p>
+        <div id="su-err" class="alert alert-err" style="display:none"></div>
+        <form onsubmit="doSignup(event)">
+          <div class="field"><label>Full Name</label><input class="input" id="su-name" type="text" placeholder="Your Name" required></div>
+          <div class="field"><label>Email</label><input class="input" id="su-email" type="email" placeholder="you@example.com" required></div>
+          <div class="field"><label>Password</label><input class="input" id="su-pass" type="password" placeholder="Min 6 characters" required minlength="6"></div>
+          <button type="submit" class="btn btn-primary" style="width:100%;height:44px" id="su-btn">Create Account →</button>
+        </form>
+        <p class="auth-footer">Already have an account? <a onclick="nav('login')">Sign in</a></p>
+      </div>
+    </div>
+    <div class="auth-photo">
+      <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=900&q=80" alt="Interior">
+      <div class="auth-photo-overlay"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     VIEW: DASHBOARD
+════════════════════════════════════════════════ -->
+<div id="view-dashboard" class="view">
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a class="logo" onclick="nav('home')">
+        <div class="logo-icon">⬡</div>
+        <span class="logo-text">Dream<span>Space</span></span>
+      </a>
+      <div class="nav-right">
+        <select class="lang-select" onchange="setLang(this.value)">
+          <option value="en">🌐 EN</option><option value="hi">🇮🇳 HI</option>
+          <option value="es">🇪🇸 ES</option><option value="fr">🇫🇷 FR</option>
+          <option value="de">🇩🇪 DE</option>
+        </select>
+        <span id="dn-user" class="user-name"></span>
+        <button class="btn btn-outline btn-sm" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+  <main class="dash-main">
+    <div class="dash-header">
+      <div>
+        <h1 id="dash-welcome">Welcome back!</h1>
+        <p>Manage your interior design projects here.</p>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="nav('design')">
+        ＋ Start New Design
+      </button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🖼️</div>
+        <p>Total Designs</p>
+        <h3 id="total-count">0</h3>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🛋️</div>
+        <p>Furniture Items</p>
+        <h3>60+</h3>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌏</div>
+        <p>Languages</p>
+        <h3>5</h3>
+      </div>
+    </div>
+    <h2 class="section-title">Recent Projects</h2>
+    <div id="designs-container"></div>
+  </main>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     VIEW: DESIGN ROOM
+════════════════════════════════════════════════ -->
+<div id="view-design" class="view">
+  <!-- Toolbar -->
+  <header class="dr-toolbar">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="nav('dashboard')" style="border-radius:50%;flex-shrink:0">←</button>
+      <input class="dr-name" id="dr-name" value="New Design Project" maxlength="60">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;display:flex;align-items:center;gap:4px">
+        📤 <span class="hide-sm">Gallery</span><input type="file" accept="image/*" style="display:none" onchange="handleImgFile(this)">
+      </label>
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;display:flex;align-items:center;gap:4px">
+        📷 <span class="hide-sm">Camera</span><input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleImgFile(this)">
+      </label>
+      <button class="btn btn-outline btn-sm" onclick="toggleAI()" id="ai-btn">✨ <span class="hide-sm">AI Ideas</span></button>
+      <button class="btn btn-primary btn-sm" id="save-btn" onclick="saveDesign()" style="min-width:72px">💾 Save</button>
+    </div>
+  </header>
+
+  <!-- Workspace -->
+  <div class="dr-workspace">
+
+    <!-- LEFT: Furniture Panel -->
+    <aside class="dr-left" id="dr-panel">
+      <!-- Panel content injected by JS -->
+    </aside>
+
+    <!-- CENTER: Canvas -->
+    <main class="dr-center">
+      <div id="room-canvas" class="room-canvas"
+        ondragover="event.preventDefault();event.dataTransfer.dropEffect='copy';canvasDragOver(true)"
+        ondragleave="canvasDragOver(false)"
+        ondrop="canvasDrop(event)"
+        onclick="canvasClick(event)"
+        style="width:100%;max-width:900px;aspect-ratio:4/3;margin:12px;max-height:calc(100vh - 72px)">
+        <div class="canvas-floor" id="canvas-floor"></div>
+        <div class="canvas-warm" id="canvas-warm" style="opacity:0"></div>
+        <div class="drop-hint" id="drop-hint" style="display:none">
+          <div class="drop-hint-box">🛋️<p>Drop here to place furniture</p></div>
+        </div>
+        <!-- Upload prompt -->
+        <div class="upload-prompt" id="upload-prompt">
+          <div class="upload-box">
+            <div class="big-emoji">📷</div>
+            <h3>Upload Your Room Photo</h3>
+            <p>Choose from gallery or take a photo, then drag furniture onto the canvas to place it.</p>
+            <div class="upload-btns">
+              <label class="btn btn-primary" style="cursor:pointer;justify-content:center">
+                📤 Choose from Gallery<input type="file" accept="image/*" style="display:none" onchange="handleImgFile(this)">
+              </label>
+              <label class="btn btn-outline" style="cursor:pointer;justify-content:center">
+                📷 Take a Photo<input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleImgFile(this)">
+              </label>
+              <button class="sample-link" onclick="loadSample()">or use a sample room →</button>
+            </div>
+          </div>
+        </div>
+        <!-- Furniture items rendered by JS -->
+      </div>
+
+      <!-- Mobile add button -->
+      <button class="mobile-furn-btn" onclick="openDrawer()">🛋️ Furniture Library</button>
+    </main>
+
+    <!-- RIGHT: Properties Panel -->
+    <aside class="dr-right">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="setTab('colors',this)">Colors</button>
+        <button class="tab-btn" onclick="setTab('light',this)">Lighting</button>
+        <button class="tab-btn" id="tab-item" onclick="setTab('item',this)">Item</button>
+      </div>
+      <div class="right-body">
+
+        <!-- Colors Tab -->
+        <div id="tab-colors">
+          <div class="right-section">
+            <h4>Wall Color</h4>
+            <div class="color-row">
+              <input type="color" id="wall-picker" value="#f5f0e8" onchange="setWall(this.value)">
+              <input class="color-hex input" id="wall-hex" value="#f5f0e8" maxlength="7" oninput="hexInput(this,'wall')">
+            </div>
+            <div class="swatch-row" id="wall-swatches"></div>
+          </div>
+          <div class="divider"></div>
+          <div class="right-section">
+            <h4>Floor Tint</h4>
+            <div class="color-row">
+              <input type="color" id="floor-picker" value="#c8a96e" onchange="setFloor(this.value)">
+              <input class="color-hex input" id="floor-hex" value="#c8a96e" maxlength="7" oninput="hexInput(this,'floor')">
+            </div>
+            <div class="swatch-row" id="floor-swatches"></div>
+          </div>
+        </div>
+
+        <!-- Lighting Tab -->
+        <div id="tab-light" style="display:none">
+          <div class="right-section">
+            <h4>Preset</h4>
+            <div class="light-grid" id="light-presets"></div>
+          </div>
+          <div class="slider-wrap">
+            <div class="slider-label"><span>Brightness</span><span id="bright-val">100%</span></div>
+            <input type="range" min="40" max="160" value="100" id="bright-slider" oninput="setBright(this.value)">
+          </div>
+          <div class="slider-wrap">
+            <div class="slider-label"><span>Warmth</span><span id="warm-val">0</span></div>
+            <input type="range" min="-100" max="100" value="0" id="warm-slider" oninput="setWarmth(this.value)">
+          </div>
+        </div>
+
+        <!-- Item Tab -->
+        <div id="tab-item" style="display:none">
+          <div id="item-panel-content">
+            <div class="no-item">
+              <div class="no-emoji">👆</div>
+              <p>No item selected</p>
+              <small>Click a furniture piece on the canvas to select, move, resize or rotate it</small>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Mobile Drawer -->
+<div id="mobile-drawer" class="drawer-overlay">
+  <div class="drawer-bg" onclick="closeDrawer()"></div>
+  <div class="drawer-sheet">
+    <div class="drawer-head">
+      <span>🛋️ Furniture Library</span>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="closeDrawer()">✕</button>
+    </div>
+    <div style="flex:1;overflow:hidden" id="drawer-panel"></div>
+  </div>
+</div>
+
+<!-- AI Panel -->
+<div class="ai-panel" id="ai-panel" style="display:none">
+  <div class="ai-card">
+    <div class="ai-head">
+      <div class="ai-head-left">✨ AI Design Suggestions</div>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="closeAI()">✕</button>
+    </div>
+    <div class="ai-body" id="ai-body">
+      <div class="ai-loading"><div class="spin spin-dark"></div><div class="ai-loading-text"><p>Analysing room…</p><small>Detecting style and layout</small></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════════════ */
+const CATALOG = [
+  {id:'sofa-1',name:'Modern Sofa',    sub:'Sleek low-profile',       cat:'Sofa',    icon:'🛋️',w:180,h:80, color:'#3d3d3d'},
+  {id:'sofa-2',name:'Classic Sofa',   sub:'Traditional rolled arms', cat:'Sofa',    icon:'🛋️',w:180,h:85, color:'#c8a96e'},
+  {id:'sofa-3',name:'L-Shaped Sofa',  sub:'Corner sectional',        cat:'Sofa',    icon:'🛋️',w:220,h:160,color:'#6b7a8d'},
+  {id:'sofa-4',name:'Luxury Sofa',    sub:'Premium velvet',          cat:'Sofa',    icon:'🛋️',w:200,h:90, color:'#8b7355'},
+  {id:'sofa-5',name:'Fabric Sofa',    sub:'Soft linen texture',      cat:'Sofa',    icon:'🛋️',w:175,h:82, color:'#7a9e7e'},
+  {id:'sofa-6',name:'Minimal Sofa',   sub:'Scandinavian lines',      cat:'Sofa',    icon:'🛋️',w:165,h:75, color:'#e8e0d5'},
+  {id:'ch-1', name:'Lounge Chair',    sub:'Wide & comfortable',      cat:'Chair',   icon:'🪑',w:85, h:85, color:'#8b5e3c'},
+  {id:'ch-2', name:'Accent Chair',    sub:'Bold statement piece',    cat:'Chair',   icon:'🪑',w:75, h:80, color:'#c0392b'},
+  {id:'ch-3', name:'Rocking Chair',   sub:'Classic wooden rocker',   cat:'Chair',   icon:'🪑',w:70, h:90, color:'#a0856c'},
+  {id:'ch-4', name:'Arm Chair',       sub:'High-back luxury',        cat:'Chair',   icon:'🪑',w:80, h:85, color:'#4a3728'},
+  {id:'ch-5', name:'Reading Chair',   sub:'Cozy with footrest',      cat:'Chair',   icon:'🪑',w:90, h:95, color:'#2c4a3e'},
+  {id:'ch-6', name:'Shell Chair',     sub:'Retro tulip design',      cat:'Chair',   icon:'🪑',w:65, h:70, color:'#d4a843'},
+  {id:'bed-1',name:'King Bed',        sub:'Spacious 180×200cm',      cat:'Bedroom', icon:'🛏️',w:200,h:210,color:'#7a6050'},
+  {id:'bed-2',name:'Queen Bed',       sub:'Versatile 160×200cm',     cat:'Bedroom', icon:'🛏️',w:180,h:200,color:'#8b7355'},
+  {id:'bed-3',name:'Platform Bed',    sub:'Low modern profile',      cat:'Bedroom', icon:'🛏️',w:185,h:205,color:'#3d3d3d'},
+  {id:'bed-4',name:'Canopy Bed',      sub:'Dramatic four-poster',    cat:'Bedroom', icon:'🛏️',w:195,h:215,color:'#5c4033'},
+  {id:'bed-5',name:'Bunk Bed',        sub:'Space-saving dual level', cat:'Bedroom', icon:'🛏️',w:110,h:200,color:'#6b8f71'},
+  {id:'bed-6',name:'Daybed',          sub:'Sofa by day, bed by night',cat:'Bedroom',icon:'🛏️',w:200,h:100,color:'#b09070'},
+  {id:'tbl-1',name:'Coffee Table',    sub:'Low-profile living room', cat:'Table',   icon:'☕',w:130,h:65, color:'#6b4f3a'},
+  {id:'tbl-2',name:'Side Table',      sub:'Compact accent table',    cat:'Table',   icon:'🫖',w:55, h:55, color:'#a0856c'},
+  {id:'tbl-3',name:'Console Table',   sub:'Narrow hallway design',   cat:'Table',   icon:'🗂️',w:160,h:40, color:'#4a3728'},
+  {id:'tbl-4',name:'Round Dining',    sub:'Classic circular table',  cat:'Table',   icon:'🍽️',w:140,h:140,color:'#8b5e3c'},
+  {id:'tbl-5',name:'Rect. Dining',    sub:'Seats up to 8 people',    cat:'Table',   icon:'🍽️',w:200,h:100,color:'#5c4033'},
+  {id:'tbl-6',name:'Glass Dining',    sub:'Modern tempered glass',   cat:'Table',   icon:'🍽️',w:180,h:90, color:'#3d5a80'},
+  {id:'sto-1',name:'Wardrobe',        sub:'Full-length 3-door',      cat:'Storage', icon:'🚪',w:180,h:60, color:'#5a4535'},
+  {id:'sto-2',name:'Dresser',         sub:'6-drawer wooden dresser', cat:'Storage', icon:'🪞',w:110,h:50, color:'#8b7355'},
+  {id:'sto-3',name:'Bookshelf',       sub:'5-shelf display unit',    cat:'Storage', icon:'📚',w:100,h:35, color:'#5c4033'},
+  {id:'sto-4',name:'TV Unit',         sub:'Low media console',       cat:'Storage', icon:'📺',w:180,h:45, color:'#2c2c2c'},
+  {id:'sto-5',name:'Sideboard',       sub:'Mid-century storage',     cat:'Storage', icon:'🗄️',w:150,h:50, color:'#4a3728'},
+  {id:'sto-6',name:'Display Cabinet', sub:'Glass-front showcase',    cat:'Storage', icon:'🏆',w:90, h:45, color:'#c8a96e'},
+  {id:'lit-1',name:'Floor Lamp',      sub:'Arc contemporary lamp',   cat:'Lighting',icon:'💡',w:45, h:45, color:'#c8a96e'},
+  {id:'lit-2',name:'Table Lamp',      sub:'Ceramic base, silk shade',cat:'Lighting',icon:'🕯️',w:35, h:35, color:'#d4a843'},
+  {id:'lit-3',name:'Pendant Light',   sub:'Hanging cluster design',  cat:'Lighting',icon:'🔆',w:50, h:50, color:'#b8893a'},
+  {id:'lit-4',name:'Wall Sconce',     sub:'Warm brushed brass',      cat:'Lighting',icon:'✨',w:30, h:30, color:'#c8a96e'},
+  {id:'lit-5',name:'Chandelier',      sub:'Crystal statement piece', cat:'Lighting',icon:'💎',w:80, h:80, color:'#b0c4de'},
+  {id:'lit-6',name:'LED Strip',       sub:'Ambient under-shelf glow',cat:'Lighting',icon:'🌟',w:120,h:10, color:'#ffd700'},
+  {id:'dec-1',name:'Large Plant',     sub:'Fiddle-leaf fig tree',    cat:'Decor',   icon:'🌿',w:60, h:60, color:'#2d6a4f'},
+  {id:'dec-2',name:'Small Plant',     sub:'Potted succulent trio',   cat:'Decor',   icon:'🌱',w:40, h:40, color:'#40916c'},
+  {id:'dec-3',name:'Tall Vase',       sub:'Ceramic statement vase',  cat:'Decor',   icon:'🏺',w:30, h:30, color:'#c8a96e'},
+  {id:'dec-4',name:'Wall Art',        sub:'Abstract canvas print',   cat:'Decor',   icon:'🖼️',w:80, h:55, color:'#9b7653'},
+  {id:'dec-5',name:'Area Rug',        sub:'Geometric woven rug',     cat:'Decor',   icon:'🟫',w:180,h:130,color:'#8b4513'},
+  {id:'dec-6',name:'Sculpture',       sub:'Modern abstract figure',  cat:'Decor',   icon:'🗿',w:30, h:30, color:'#808080'},
+  {id:'din-1',name:'Dining Chair',    sub:'Upholstered seat',        cat:'Dining',  icon:'🪑',w:55, h:55, color:'#8b6914'},
+  {id:'din-2',name:'Bar Stool',       sub:'Counter-height seating',  cat:'Dining',  icon:'🪑',w:45, h:50, color:'#5c4033'},
+  {id:'din-3',name:'Bench Seat',      sub:'Long dining bench',       cat:'Dining',  icon:'🪑',w:140,h:45, color:'#7a6050'},
+  {id:'din-4',name:'China Cabinet',   sub:'Display & dining storage',cat:'Dining',  icon:'🍶',w:100,h:50, color:'#4a3728'},
+  {id:'din-5',name:'Wine Rack',       sub:'Floor-standing 24-bottle',cat:'Dining',  icon:'🍷',w:50, h:80, color:'#722f37'},
+  {id:'din-6',name:'Bar Cart',        sub:'Rolling drinks trolley',  cat:'Dining',  icon:'🥂',w:70, h:55, color:'#b8893a'},
+  {id:'ofc-1',name:'Standing Desk',   sub:'Height-adjustable',       cat:'Office',  icon:'💼',w:160,h:75, color:'#3d3d3d'},
+  {id:'ofc-2',name:'L-Shaped Desk',   sub:'Corner workstation',      cat:'Office',  icon:'💻',w:200,h:140,color:'#5c4033'},
+  {id:'ofc-3',name:'Classic Desk',    sub:'Solid oak writing desk',  cat:'Office',  icon:'📝',w:140,h:65, color:'#8b7355'},
+  {id:'ofc-4',name:'Office Chair',    sub:'Ergonomic mesh back',     cat:'Office',  icon:'🪑',w:60, h:60, color:'#2c2c2c'},
+  {id:'ofc-5',name:'Filing Cabinet',  sub:'3-drawer steel cabinet',  cat:'Office',  icon:'🗂️',w:50, h:65, color:'#708090'},
+  {id:'ofc-6',name:'Whiteboard',      sub:'Magnetic glass board',    cat:'Office',  icon:'📋',w:140,h:10, color:'#ffffff'},
+  {id:'out-1',name:'Garden Chair',    sub:'Weather-resistant rattan',cat:'Outdoor', icon:'🪑',w:75, h:75, color:'#8fbc8f'},
+  {id:'out-2',name:'Patio Table',     sub:'Glass-top bistro table',  cat:'Outdoor', icon:'☂️',w:120,h:120,color:'#2f4f4f'},
+  {id:'out-3',name:'Outdoor Sofa',    sub:'All-weather sectional',   cat:'Outdoor', icon:'🛋️',w:190,h:90, color:'#6b8e6b'},
+  {id:'out-4',name:'Hammock',         sub:'Rope garden hammock',     cat:'Outdoor', icon:'🛶',w:180,h:80, color:'#d2691e'},
+  {id:'out-5',name:'Planter Box',     sub:'Raised herb garden',      cat:'Outdoor', icon:'🌻',w:100,h:50, color:'#556b2f'},
+  {id:'out-6',name:'Outdoor Lamp',    sub:'Solar garden lantern',    cat:'Outdoor', icon:'🏮',w:35, h:35, color:'#daa520'},
+];
+
+const WALL_SWATCHES  = ['#f5f0e8','#ffffff','#e8e4df','#d4c5b0','#c9b8a8','#3d3d3d'];
+const FLOOR_SWATCHES = ['#c8a96e','#a0856c','#8b7355','#d4aa70','#4e342e','#37474f'];
+const LIGHT_PRESETS  = [
+  {key:'daylight',label:'Day',   emoji:'☀️', bright:100, warmth:0  },
+  {key:'warm',    label:'Warm',  emoji:'🕯️', bright:90,  warmth:70 },
+  {key:'cool',    label:'Cool',  emoji:'💡', bright:110, warmth:-50},
+  {key:'night',   label:'Night', emoji:'🌙', bright:55,  warmth:30 },
+];
+const AI_TIPS = [
+  {palette:['#fdf6ec','#d4a76a','#3d5a80','#f0ebe0'],tip:'Warm neutrals with a blue accent. Add a floor lamp for cozy ambiance.'},
+  {palette:['#f9f3f0','#c9b99a','#6b4226','#e8ddd3'],tip:'Earthy tones with dark wood. A large rug ties the room together.'},
+  {palette:['#fef9f3','#b5895a','#2d2d2d','#efe6d8'],tip:'Dark furniture against off-white walls creates a modern luxe look.'},
+];
+const I18N = {
+  en:{hero_title:'Design Your Dream Home',hero_sub:'Visualize, furnish, and perfect your interior spaces with our professional virtual design studio.',start:'Start Designing Free',login:'Sign In'},
+  hi:{hero_title:'अपने सपनों का घर डिज़ाइन करें',hero_sub:'हमारे पेशेवर वर्चुअल डिज़ाइन स्टूडियो के साथ अपने आंतरिक स्थानों की कल्पना करें।',start:'डिज़ाइन शुरू करें',login:'साइन इन'},
+  es:{hero_title:'Diseña la casa de tus sueños',hero_sub:'Visualiza, amuebla y perfecciona tus espacios interiores con nuestro estudio de diseño virtual.',start:'Comenzar Gratis',login:'Iniciar Sesión'},
+  fr:{hero_title:'Concevez la maison de vos rêves',hero_sub:'Visualisez, meublez et perfectionnez vos espaces intérieurs avec notre studio de design virtuel professionnel.',start:'Commencer Gratuitement',login:'Se Connecter'},
+  de:{hero_title:'Entwerfen Sie Ihr Traumhaus',hero_sub:'Visualisieren, möblieren und perfektionieren Sie Ihre Innenräume mit unserem professionellen virtuellen Designstudio.',start:'Kostenlos Starten',login:'Anmelden'},
+};
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+let currentView = 'home';
+let currentLang = 'en';
+let currentUser = null;
+let designs = [];
+let designId = null;
+
+// Design room state
+let drWall   = '#f5f0e8';
+let drFloor  = '#c8a96e';
+let drBright = 100;
+let drWarmth = 0;
+let drLight  = 'daylight';
+let drItems  = [];
+let drSelId  = null;
+let drTab    = 'colors';
+let drMode   = 'quick';
+let drSearch = '';
+let drCat    = 'All';
+let drSel    = {}; // {id: qty}
+let roomImg  = null;
+let aiOpen   = false;
+let drawerOpen = false;
+let dragData = null; // item being dragged from panel
+
+// Drag/resize on canvas
+let dragging = null; // {id, mode, startX, startY, origX, origY, origW, origH}
+
+/* ═══════════════════════════════════════════════════════════
+   AUTH (localStorage)
+═══════════════════════════════════════════════════════════ */
+function loadAuth(){
+  try{
+    const u=localStorage.getItem('ds_user');
+    if(u)currentUser=JSON.parse(u);
+    const d=localStorage.getItem('ds_designs');
+    if(d)designs=JSON.parse(d);
+  }catch(e){}
+}
+function saveAuth(){ localStorage.setItem('ds_user',JSON.stringify(currentUser)); }
+function saveDesigns(){ localStorage.setItem('ds_designs',JSON.stringify(designs)); }
+function getUsers(){try{return JSON.parse(localStorage.getItem('ds_users')||'[]')}catch{return []}}
+function saveUsers(u){localStorage.setItem('ds_users',JSON.stringify(u))}
+
+function doLogin(e){
+  e.preventDefault();
+  const email=document.getElementById('li-email').value.trim().toLowerCase();
+  const pass=document.getElementById('li-pass').value;
+  const users=getUsers();
+  const u=users.find(x=>x.email===email&&x.password===pass);
+  if(!u){showErr('login-err','Invalid email or password.'); return;}
+  currentUser=u; saveAuth();
+  designs=designs.filter(d=>d.userId===u.id);
+  const all=JSON.parse(localStorage.getItem('ds_all_designs')||'[]');
+  designs=all.filter(d=>d.userId===u.id);
+  nav('dashboard');
+}
+function doSignup(e){
+  e.preventDefault();
+  const name=document.getElementById('su-name').value.trim();
+  const email=document.getElementById('su-email').value.trim().toLowerCase();
+  const pass=document.getElementById('su-pass').value;
+  const users=getUsers();
+  if(users.find(x=>x.email===email)){showErr('su-err','Email already registered.');return;}
+  const u={id:'u_'+Date.now(),name,email,password:pass};
+  users.push(u); saveUsers(users);
+  currentUser=u; saveAuth();
+  designs=[]; saveDesigns();
+  nav('dashboard');
+}
+function doLogout(){
+  currentUser=null; designs=[];
+  localStorage.removeItem('ds_user');
+  nav('home');
+}
+function showErr(id,msg){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none',4000);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ROUTER
+═══════════════════════════════════════════════════════════ */
+function nav(view){
+  if((view==='dashboard'||view==='design')&&!currentUser){ nav('login'); return; }
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  currentView=view;
+  if(view==='home')renderHome();
+  if(view==='dashboard')renderDashboard();
+  if(view==='design')initDesignRoom();
+  window.scrollTo(0,0);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   I18N
+═══════════════════════════════════════════════════════════ */
+function setLang(lang){
+  currentLang=lang;
+  document.querySelectorAll('.lang-select').forEach(s=>s.value=lang);
+  const t=I18N[lang]||I18N.en;
+  const ht=document.getElementById('hero-title');
+  const hs=document.getElementById('hero-subtitle');
+  const bs=document.getElementById('btn-start');
+  const bl=document.getElementById('btn-login-h');
+  if(ht)ht.textContent=t.hero_title;
+  if(hs)hs.textContent=t.hero_sub;
+  if(bs)bs.textContent=t.start;
+  if(bl)bl.textContent=t.login;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HOME
+═══════════════════════════════════════════════════════════ */
+function renderHome(){
+  setLang(currentLang);
+  const loggedIn=!!currentUser;
+  document.getElementById('hn-user').style.display=loggedIn?'':'none';
+  document.getElementById('hn-dash').style.display=loggedIn?'':'none';
+  document.getElementById('hn-out').style.display=loggedIn?'':'none';
+  document.getElementById('hn-login').style.display=loggedIn?'none':'';
+  document.getElementById('hn-signup').style.display=loggedIn?'none':'';
+  if(loggedIn){
+    document.getElementById('hn-user').textContent=currentUser.name;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════════ */
+function renderDashboard(){
+  if(!currentUser)return;
+  document.getElementById('dn-user').textContent=currentUser.name;
+  document.getElementById('dash-welcome').textContent=`Welcome, ${currentUser.name.split(' ')[0]}!`;
+  const all=JSON.parse(localStorage.getItem('ds_all_designs')||'[]');
+  designs=all.filter(d=>d.userId===currentUser.id);
+  document.getElementById('total-count').textContent=designs.length;
+  const container=document.getElementById('designs-container');
+  if(!designs.length){
+    container.innerHTML=`<div class="empty-state"><div class="empty-icon">🖼️</div><h3>No designs yet</h3><p>Start your first interior design project today.</p><button class="btn btn-primary btn-lg" onclick="nav('design')">Create your first design</button></div>`;
+    return;
+  }
+  container.innerHTML=`<div class="designs-grid">${designs.map(d=>`
+    <div class="design-card">
+      <div class="design-thumb">
+        ${d.thumbnail?`<img src="${d.thumbnail}" alt="${d.name}">`:'🖼️'}
+        <div class="design-overlay">
+          <button class="btn btn-primary btn-sm" onclick="loadDesign('${d.id}')">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteDesign('${d.id}')">🗑️ Delete</button>
+        </div>
+      </div>
+      <div class="design-info">
+        <h3 class="truncate">${d.name}</h3>
+        <span>🕐 ${new Date(d.updatedAt).toLocaleDateString()}</span>
+      </div>
+    </div>`).join('')}</div>`;
+}
+function deleteDesign(id){
+  if(!confirm('Delete this design?'))return;
+  let all=JSON.parse(localStorage.getItem('ds_all_designs')||'[]');
+  all=all.filter(d=>d.id!==id);
+  localStorage.setItem('ds_all_designs',JSON.stringify(all));
+  renderDashboard();
+}
+function loadDesign(id){
+  const all=JSON.parse(localStorage.getItem('ds_all_designs')||'[]');
+  const d=all.find(x=>x.id===id);
+  if(!d)return;
+  designId=id;
+  drWall=d.wallColor||'#f5f0e8';
+  drFloor=d.floorColor||'#c8a96e';
+  drBright=d.brightness||100;
+  drWarmth=d.warmth||0;
+  drLight=d.lightType||'daylight';
+  drItems=d.items||[];
+  roomImg=d.roomImg||null;
+  nav('design');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN ROOM — INIT
+═══════════════════════════════════════════════════════════ */
+function initDesignRoom(){
+  if(!designId){
+    designId='d_'+Date.now();
+    drWall='#f5f0e8'; drFloor='#c8a96e';
+    drBright=100; drWarmth=0; drLight='daylight';
+    drItems=[]; drSelId=null;
+    drMode='quick'; drSearch=''; drCat='All'; drSel={};
+    roomImg=null;
+    document.getElementById('dr-name').value='New Design Project';
+  }
+  // Swatches
+  const ws=document.getElementById('wall-swatches');
+  const fs=document.getElementById('floor-swatches');
+  ws.innerHTML=WALL_SWATCHES.map(c=>`<div class="swatch${c===drWall?' active':''}" style="background:${c}" onclick="setWall('${c}')"></div>`).join('');
+  fs.innerHTML=FLOOR_SWATCHES.map(c=>`<div class="swatch${c===drFloor?' active':''}" style="background:${c}" onclick="setFloor('${c}')"></div>`).join('');
+  // Light presets
+  document.getElementById('light-presets').innerHTML=LIGHT_PRESETS.map(p=>`<button class="light-btn${p.key===drLight?' active':''}" onclick="setLightPreset('${p.key}')"><span class="light-emoji">${p.emoji}</span>${p.label}</button>`).join('');
+  // Sliders
+  document.getElementById('bright-slider').value=drBright;
+  document.getElementById('bright-val').textContent=drBright+'%';
+  document.getElementById('warm-slider').value=drWarmth;
+  document.getElementById('warm-val').textContent=drWarmth;
+  // Render
+  applyColors(); applyLighting();
+  renderFurnPanel('dr-panel');
+  renderFurnPanel('drawer-panel');
+  renderCanvas();
+  updateUploadPrompt();
+  setTab('colors', document.querySelector('.tab-btn'));
+  // mouse events
+  window.addEventListener('mousemove',onMouseMove);
+  window.addEventListener('mouseup',stopDrag);
+  window.addEventListener('touchmove',onTouchMoveGlobal,{passive:false});
+  window.addEventListener('touchend',stopDrag);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN ROOM — COLORS & LIGHTING
+═══════════════════════════════════════════════════════════ */
+function setWall(c){
+  drWall=c;
+  document.getElementById('wall-picker').value=c;
+  document.getElementById('wall-hex').value=c;
+  document.querySelectorAll('#wall-swatches .swatch').forEach(s=>s.classList.toggle('active',s.style.background===c||s.style.backgroundColor===c));
+  applyColors();
+}
+function setFloor(c){
+  drFloor=c;
+  document.getElementById('floor-picker').value=c;
+  document.getElementById('floor-hex').value=c;
+  document.querySelectorAll('#floor-swatches .swatch').forEach(s=>s.classList.toggle('active',s.style.background===c||s.style.backgroundColor===c));
+  applyColors();
+}
+function hexInput(el,type){
+  const v=el.value;
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){ type==='wall'?setWall(v):setFloor(v); }
+}
+function applyColors(){
+  const canvas=document.getElementById('room-canvas');
+  if(canvas) canvas.style.backgroundColor=drWall;
+  const floor=document.getElementById('canvas-floor');
+  if(floor) floor.style.background=`linear-gradient(to top,${drFloor}80,transparent)`;
+}
+function setBright(v){
+  drBright=+v;
+  document.getElementById('bright-val').textContent=v+'%';
+  applyLighting();
+}
+function setWarmth(v){
+  drWarmth=+v;
+  document.getElementById('warm-val').textContent=v;
+  applyLighting();
+}
+function setLightPreset(key){
+  const p=LIGHT_PRESETS.find(x=>x.key===key);
+  if(!p)return;
+  drLight=key; drBright=p.bright; drWarmth=p.warmth;
+  document.getElementById('bright-slider').value=drBright;
+  document.getElementById('bright-val').textContent=drBright+'%';
+  document.getElementById('warm-slider').value=drWarmth;
+  document.getElementById('warm-val').textContent=drWarmth;
+  document.querySelectorAll('.light-btn').forEach(b=>b.classList.toggle('active',b.textContent.includes(p.label)));
+  applyLighting();
+}
+function applyLighting(){
+  const canvas=document.getElementById('room-canvas');
+  if(canvas) canvas.style.filter=`brightness(${drBright/100})`;
+  const warm=document.getElementById('canvas-warm');
+  if(!warm)return;
+  if(Math.abs(drWarmth)<2){warm.style.opacity=0;return;}
+  const col=drWarmth>0?'#ff8c00':'#224488';
+  const op=(Math.abs(drWarmth)/260).toFixed(3);
+  warm.style.backgroundColor=col;
+  warm.style.opacity=op;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FURNITURE PANEL
+═══════════════════════════════════════════════════════════ */
+function renderFurnPanel(containerId){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  const cats=['All',...new Set(CATALOG.map(i=>i.cat))];
+  const filtered=CATALOG.filter(i=>(drCat==='All'||i.cat===drCat)&&(i.name.toLowerCase().includes(drSearch.toLowerCase())||i.sub.toLowerCase().includes(drSearch.toLowerCase())));
+  const totalSel=Object.values(drSel).reduce((s,n)=>s+n,0);
+  el.innerHTML=`
+  <div class="panel-header">
+    <div class="panel-title">🛋️ Furniture Library</div>
+    <div class="mode-toggle">
+      <button class="mode-btn${drMode==='quick'?' active':''}" onclick="setMode('quick')">👆 Quick</button>
+      <button class="mode-btn${drMode==='multi'?' active':''}" onclick="setMode('multi')">☑️ Multi</button>
+    </div>
+    <p style="font-size:10px;color:var(--fg2);margin-top:6px">${drMode==='quick'?'Click "+ Add" or drag any item onto the canvas.':'Select items & quantities, then click "Place".'}</p>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" placeholder="Search furniture…" value="${drSearch}" oninput="onSearch(this.value)" id="search-${containerId}">
+      ${drSearch?`<button class="search-clear" onclick="onSearch('')">✕</button>`:''}
+    </div>
+    <div class="cat-pills">
+      ${cats.map(c=>`<button class="cat-pill${drCat===c?' active':''}" onclick="setCat('${c}')">${c}</button>`).join('')}
+    </div>
+  </div>
+  <div class="furn-list scrollbar-hide">
+    ${filtered.length===0?`<div class="no-results">🔍<span>No results for "${drSearch}"</span></div>`
+    :filtered.map(item=>{
+      const sel=drSel[item.id]||0;
+      const isSel=sel>0&&drMode==='multi';
+      return `<div class="furn-item${isSel?' selected':''}" draggable="true"
+        ondragstart="panelDragStart(event,'${item.id}')"
+        style="border-color:${isSel?'var(--primary)':'var(--border)'}">
+        <div class="furn-icon-box" style="background:${item.color}22;border-color:${item.color}30">
+          <span style="font-size:24px">${item.icon}</span>
+          <div class="furn-color-dot" style="background:${item.color}"></div>
+        </div>
+        <div class="furn-info">
+          <div class="furn-name">${item.name}</div>
+          <div class="furn-sub">${item.sub}</div>
+          ${isSel?`<div class="furn-qty">
+            <button onclick="changeQty('${item.id}',-1)">−</button>
+            <span>${sel}</span>
+            <button onclick="changeQty('${item.id}',1)">+</button>
+          </div>`:''}
+        </div>
+        ${drMode==='quick'
+          ?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <span class="drag-hint" style="opacity:0">⠿ drag</span>
+              <button class="add-btn" onclick="quickAdd('${item.id}')">＋ Add</button>
+            </div>`
+          :`<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <button class="chk-btn${isSel?' checked':''}" onclick="toggleSel('${item.id}')">${isSel?'✓':''}</button>
+              ${isSel?`<span class="qty-badge">${sel}</span>`:''}
+            </div>`
+        }
+      </div>`;
+    }).join('')}
+  </div>
+  ${drMode==='multi'?`<div class="sel-tray">
+    <div class="tray-header" onclick="toggleTray()">
+      <span class="tray-label">${totalSel>0?`🛍️ ${totalSel} item${totalSel!==1?'s':''} selected`:'Nothing selected yet'}</span>
+      <span>⌃</span>
+    </div>
+    ${totalSel>0?`<div class="tray-items scrollbar-hide">${Object.entries(drSel).filter(([,q])=>q>0).map(([id,qty])=>{const it=CATALOG.find(x=>x.id===id);if(!it)return'';return`<div class="tray-row"><span>${it.icon}</span><span class="tray-name">${it.name}</span><div class="tray-btns"><button class="tray-btn" onclick="changeQty('${id}',-1)">−</button><span style="font-size:11px;font-weight:700;min-width:16px;text-align:center">${qty}</span><button class="tray-btn" onclick="changeQty('${id}',1)">+</button><button class="tray-btn rm" onclick="changeQty('${id}',-${qty})">✕</button></div></div>`;}).join('')}</div>`:''}
+    <div class="tray-actions">
+      <button class="btn btn-primary" style="flex:1;height:36px;font-size:12px" ${totalSel===0?'disabled':''} onclick="placeMulti()">＋ Place ${totalSel>0?totalSel+' ':''}Item${totalSel!==1?'s':''}</button>
+      ${totalSel>0?`<button class="btn btn-outline btn-sm" onclick="clearSel()">Clear</button>`:''}
+    </div>
+  </div>`:''}`;
+}
+function setMode(m){ drMode=m; if(m==='quick')drSel={}; refreshPanels(); }
+function onSearch(v){ drSearch=v; refreshPanels(); }
+function setCat(c){ drCat=c; refreshPanels(); }
+function toggleSel(id){ if(drSel[id]){delete drSel[id];}else{drSel[id]=1;} refreshPanels(); }
+function changeQty(id,d){ const n=(drSel[id]||0)+d; if(n<=0){delete drSel[id];}else{drSel[id]=Math.min(n,10);} refreshPanels(); }
+function clearSel(){ drSel={}; refreshPanels(); }
+function refreshPanels(){ renderFurnPanel('dr-panel'); renderFurnPanel('drawer-panel'); }
+function toggleTray(){} // tray always shown
+
+/* ═══════════════════════════════════════════════════════════
+   PLACING FURNITURE
+═══════════════════════════════════════════════════════════ */
+function uid(){ return 'i_'+Math.random().toString(36).slice(2)+'_'+Date.now(); }
+function quickAdd(itemId, dropX, dropY){
+  const item=CATALOG.find(i=>i.id===itemId);
+  if(!item)return;
+  const canvas=document.getElementById('room-canvas');
+  const rect=canvas.getBoundingClientRect();
+  const w=Math.max(64,item.w*0.42);
+  const h=Math.max(64,item.h*0.42);
+  const cx=dropX!==undefined?dropX:rect.width/2;
+  const cy=dropY!==undefined?dropY:rect.height/2;
+  const placed={id:uid(),itemId,icon:item.icon,label:item.name,color:item.color,
+    x:Math.max(0,Math.min(cx-w/2+(Math.random()-0.5)*20, rect.width-w)),
+    y:Math.max(0,Math.min(cy-h/2+(Math.random()-0.5)*20, rect.height-h)),
+    w,h,rotation:0};
+  drItems.push(placed);
+  drSelId=placed.id;
+  renderCanvas(); updateItemPanel();
+  setTab('item', document.querySelector('[onclick="setTab(\'item\',this)"]'));
+  closeDrawer();
+}
+function placeMulti(){
+  const canvas=document.getElementById('room-canvas');
+  const rect=canvas.getBoundingClientRect();
+  const cx=rect.width/2; const cy=rect.height/2;
+  const entries=Object.entries(drSel).filter(([,q])=>q>0).map(([id,qty])=>({item:CATALOG.find(x=>x.id===id),qty})).filter(e=>e.item);
+  if(!entries.length)return;
+  let totalPlaced=0;
+  entries.forEach(({item,qty})=>{
+    for(let q=0;q<qty;q++){
+      const allQty=entries.reduce((s,e)=>s+e.qty,0);
+      const spread=allQty>1?(totalPlaced-(allQty-1)/2)*90:0;
+      const w=Math.max(64,item.w*0.42); const h=Math.max(64,item.h*0.42);
+      const placed={id:uid(),itemId:item.id,icon:item.icon,label:item.name,color:item.color,
+        x:Math.max(0,Math.min(cx-w/2+spread+(Math.random()-0.5)*30,rect.width-w)),
+        y:Math.max(0,Math.min(cy-h/2+(Math.random()-0.5)*30,rect.height-h)),
+        w,h,rotation:0};
+      drItems.push(placed);
+      drSelId=placed.id;
+      totalPlaced++;
+    }
+  });
+  drSel={}; drMode='quick';
+  renderCanvas(); refreshPanels(); updateItemPanel();
+  closeDrawer();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HTML5 DRAG FROM PANEL
+═══════════════════════════════════════════════════════════ */
+function panelDragStart(e,itemId){
+  e.dataTransfer.setData('furnId',itemId);
+  e.dataTransfer.effectAllowed='copy';
+  dragData=itemId;
+}
+function canvasDragOver(on){
+  document.getElementById('drop-hint').style.display=on?'flex':'none';
+  document.getElementById('room-canvas').classList.toggle('drag-over',on);
+}
+function canvasDrop(e){
+  e.preventDefault();
+  canvasDragOver(false);
+  const itemId=e.dataTransfer.getData('furnId')||dragData;
+  if(!itemId)return;
+  const canvas=document.getElementById('room-canvas');
+  const rect=canvas.getBoundingClientRect();
+  quickAdd(itemId, e.clientX-rect.left, e.clientY-rect.top);
+  dragData=null;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CANVAS RENDER
+═══════════════════════════════════════════════════════════ */
+function renderCanvas(){
+  const canvas=document.getElementById('room-canvas');
+  // Remove old placed items
+  canvas.querySelectorAll('.furn-placed').forEach(e=>e.remove());
+  // Room image
+  canvas.querySelector('.canvas-img')?.remove();
+  if(roomImg){
+    const img=document.createElement('img');
+    img.className='canvas-img'; img.src=roomImg; img.alt='Room';
+    canvas.insertBefore(img, canvas.querySelector('.canvas-floor'));
+  }
+  // Place items
+  drItems.forEach(item=>canvas.appendChild(buildItemEl(item)));
+}
+function buildItemEl(item){
+  const isSel=item.id===drSelId;
+  const wrap=document.createElement('div');
+  wrap.className='furn-placed'+(isSel?' selected':'');
+  wrap.id='placed-'+item.id;
+  wrap.style.cssText=`left:${item.x}px;top:${item.y}px;width:${item.w}px;height:${item.h}px;z-index:${isSel?20:10};transform:rotate(${item.rotation}deg);border-color:${item.color}50;background:${item.color}1a`;
+  // Emoji
+  const emoji=document.createElement('span');
+  emoji.style.fontSize=Math.min(item.w,item.h)*0.46+'px';
+  emoji.textContent=item.icon;
+  wrap.appendChild(emoji);
+  // Label (selected)
+  if(isSel){
+    const lbl=document.createElement('div');
+    lbl.className='furn-label'; lbl.textContent=item.label;
+    wrap.appendChild(lbl);
+    // Toolbar
+    const tb=document.createElement('div');
+    tb.className='furn-toolbar';
+    tb.innerHTML=`<button class="furn-tb-btn" onclick="rotateItem('${item.id}',-45)" title="Rotate Left">↺</button><button class="furn-tb-btn" onclick="rotateItem('${item.id}',45)" title="Rotate Right">↻</button><div class="furn-tb-sep"></div><button class="furn-tb-btn del" onclick="deleteItem('${item.id}')" title="Delete">🗑</button>`;
+    tb.addEventListener('mousedown',e=>e.stopPropagation());
+    tb.addEventListener('touchstart',e=>e.stopPropagation());
+    wrap.appendChild(tb);
+    // Resize handles
+    [['nw','rh-nw'],['ne','rh-ne'],['sw','rh-sw'],['se','rh-se']].forEach(([mode,cls])=>{
+      const rh=document.createElement('div');
+      rh.className=`resize-handle ${cls}`;
+      rh.style.cursor=mode+'-resize';
+      rh.addEventListener('mousedown',ev=>{ev.stopPropagation();startInteract(ev,item.id,'resize-'+mode);});
+      rh.addEventListener('touchstart',ev=>{ev.stopPropagation();startInteract(ev,item.id,'resize-'+mode);},{passive:false});
+      wrap.appendChild(rh);
+    });
+  }
+  // Drag-move
+  wrap.addEventListener('mousedown',e=>{ if(e.target.classList.contains('resize-handle'))return; startInteract(e,item.id,'move'); });
+  wrap.addEventListener('touchstart',e=>{ if(e.target.classList.contains('resize-handle'))return; startInteract(e,item.id,'move'); },{passive:false});
+  wrap.addEventListener('click',e=>{ e.stopPropagation(); selectItem(item.id); });
+  return wrap;
+}
+function canvasClick(e){
+  if(e.target===e.currentTarget||e.target.classList.contains('canvas-img')||e.target.classList.contains('canvas-floor')||e.target.classList.contains('canvas-warm')){
+    drSelId=null; renderCanvas(); updateItemPanel();
+    setTab('colors', document.querySelector('.tab-btn'));
+  }
+}
+function selectItem(id){
+  drSelId=id; renderCanvas(); updateItemPanel();
+  setTab('item', document.querySelector('[onclick="setTab(\'item\',this)"]'));
+}
+function deleteItem(id){
+  drItems=drItems.filter(i=>i.id!==id);
+  drSelId=null; renderCanvas(); updateItemPanel();
+  setTab('colors', document.querySelector('.tab-btn'));
+}
+function rotateItem(id,deg){
+  const item=drItems.find(i=>i.id===id);
+  if(item){ item.rotation=((item.rotation||0)+deg+360)%360; renderCanvas(); updateItemPanel(); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAG / RESIZE ON CANVAS
+═══════════════════════════════════════════════════════════ */
+function startInteract(e,id,mode){
+  e.stopPropagation();
+  const item=drItems.find(i=>i.id===id);
+  if(!item)return;
+  const canvas=document.getElementById('room-canvas');
+  const rect=canvas.getBoundingClientRect();
+  const cx='touches'in e?e.touches[0].clientX:e.clientX;
+  const cy='touches'in e?e.touches[0].clientY:e.clientY;
+  dragging={id,mode,startX:cx-rect.left,startY:cy-rect.top,origX:item.x,origY:item.y,origW:item.w,origH:item.h};
+  drSelId=id;
+  if(e.preventDefault)e.preventDefault();
+}
+function onMouseMove(e){ moveInteract(e.clientX,e.clientY); }
+function onTouchMoveGlobal(e){ if(!dragging)return; e.preventDefault(); moveInteract(e.touches[0].clientX,e.touches[0].clientY); }
+function moveInteract(cx,cy){
+  if(!dragging)return;
+  const canvas=document.getElementById('room-canvas');
+  if(!canvas)return;
+  const rect=canvas.getBoundingClientRect();
+  const relX=cx-rect.left; const relY=cy-rect.top;
+  const dx=relX-dragging.startX; const dy=relY-dragging.startY;
+  const {id,mode,origX,origY,origW,origH}=dragging;
+  const item=drItems.find(i=>i.id===id);
+  if(!item)return;
+  if(mode==='move'){
+    item.x=Math.max(0,Math.min(origX+dx,rect.width-item.w));
+    item.y=Math.max(0,Math.min(origY+dy,rect.height-item.h));
+  }else if(mode==='resize-se'){
+    item.w=Math.max(40,origW+dx); item.h=Math.max(40,origH+dy);
+  }else if(mode==='resize-sw'){
+    const nw=Math.max(40,origW-dx); item.x=Math.min(origX+dx,origX+origW-40); item.w=nw; item.h=Math.max(40,origH+dy);
+  }else if(mode==='resize-ne'){
+    const nh=Math.max(40,origH-dy); item.y=Math.min(origY+dy,origY+origH-40); item.w=Math.max(40,origW+dx); item.h=nh;
+  }else if(mode==='resize-nw'){
+    const nw=Math.max(40,origW-dx); const nh=Math.max(40,origH-dy);
+    item.x=Math.min(origX+dx,origX+origW-40); item.y=Math.min(origY+dy,origY+origH-40); item.w=nw; item.h=nh;
+  }
+  // Live DOM update (fast, no full re-render)
+  const el=document.getElementById('placed-'+id);
+  if(el){ el.style.left=item.x+'px'; el.style.top=item.y+'px'; el.style.width=item.w+'px'; el.style.height=item.h+'px'; }
+  // Update size display
+  const sizeEl=document.getElementById('item-size-display');
+  if(sizeEl)sizeEl.textContent=`${Math.round(item.w)}×${Math.round(item.h)}px`;
+}
+function stopDrag(){
+  if(!dragging)return;
+  renderCanvas(); updateItemPanel();
+  dragging=null;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ITEM PANEL
+═══════════════════════════════════════════════════════════ */
+function updateItemPanel(){
+  const el=document.getElementById('item-panel-content');
+  if(!el)return;
+  const item=drSelId?drItems.find(i=>i.id===drSelId):null;
+  if(!item){
+    el.innerHTML=`<div class="no-item"><div class="no-emoji">👆</div><p>No item selected</p><small>Click a furniture piece on the canvas to select, move, resize or rotate it</small></div>`;
+    return;
+  }
+  el.innerHTML=`
+    <div class="item-preview">
+      <span class="item-emoji">${item.icon}</span>
+      <div class="item-preview-info">
+        <p>${item.label}</p>
+        <span id="item-size-display">${Math.round(item.w)}×${Math.round(item.h)}px — drag corners to resize</span>
+      </div>
+    </div>
+    <div class="right-section">
+      <h4>Rotation: ${item.rotation}°</h4>
+      <input type="range" min="0" max="360" value="${item.rotation}" style="width:100%;accent-color:var(--primary)" oninput="setRotation('${item.id}',+this.value)">
+      <div class="rot-row">
+        <button class="btn btn-outline btn-sm" style="flex:1" onclick="rotateItem('${item.id}',-45)">↺ −45°</button>
+        <button class="btn btn-outline btn-sm" style="flex:1" onclick="rotateItem('${item.id}',45)">↻ +45°</button>
+      </div>
+    </div>
+    <div class="right-section">
+      <h4>Size</h4>
+      <div class="size-grid">
+        <div class="size-ctrl"><p>Width</p><div class="size-ctrl-row"><button onclick="resizeItem('${item.id}','w',-10)">−</button><span>${Math.round(item.w)}</span><button onclick="resizeItem('${item.id}','w',10)">+</button></div></div>
+        <div class="size-ctrl"><p>Height</p><div class="size-ctrl-row"><button onclick="resizeItem('${item.id}','h',-10)">−</button><span>${Math.round(item.h)}</span><button onclick="resizeItem('${item.id}','h',10)">+</button></div></div>
+      </div>
+    </div>
+    <div class="right-section">
+      <h4>Color Tint</h4>
+      <div class="color-row">
+        <input type="color" value="${item.color}" onchange="setItemColor('${item.id}',this.value)" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);padding:2px;cursor:pointer">
+        <span style="font-size:12px;font-family:monospace;color:var(--fg2)">${item.color}</span>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-danger" style="width:100%;height:38px" onclick="deleteItem('${item.id}')">🗑️ Remove from Canvas</button>`;
+}
+function setRotation(id,deg){
+  const item=drItems.find(i=>i.id===id);
+  if(item){item.rotation=deg; renderCanvas(); updateItemPanel();}
+}
+function resizeItem(id,axis,delta){
+  const item=drItems.find(i=>i.id===id);
+  if(!item)return;
+  if(axis==='w')item.w=Math.max(40,item.w+delta);
+  else item.h=Math.max(40,item.h+delta);
+  renderCanvas(); updateItemPanel();
+}
+function setItemColor(id,c){
+  const item=drItems.find(i=>i.id===id);
+  if(item){item.color=c; renderCanvas(); updateItemPanel();}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════════ */
+function setTab(name, btn){
+  drTab=name;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('[onclick^="setTab"]').forEach(b=>{
+    if(b.getAttribute('onclick').includes("'"+name+"'"))b.classList.add('active');
+  });
+  ['colors','light','item'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el)el.style.display=t===name?'block':'none';
+  });
+  if(name==='item')updateItemPanel();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   IMAGE UPLOAD
+═══════════════════════════════════════════════════════════ */
+function handleImgFile(input){
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    roomImg=e.target.result;
+    updateUploadPrompt();
+    renderCanvas();
+    // AI
+    setAILoading();
+    setTimeout(showAIResult,1600);
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+function loadSample(){
+  roomImg='https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=80';
+  updateUploadPrompt(); renderCanvas();
+  setAILoading(); setTimeout(showAIResult,1600);
+}
+function updateUploadPrompt(){
+  const p=document.getElementById('upload-prompt');
+  if(p)p.style.display=roomImg?'none':'flex';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AI PANEL
+═══════════════════════════════════════════════════════════ */
+function toggleAI(){
+  if(!roomImg){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=()=>handleImgFile(inp);inp.click();return;}
+  aiOpen=!aiOpen;
+  const el=document.getElementById('ai-panel');
+  if(el)el.style.display=aiOpen?'block':'none';
+}
+function closeAI(){ aiOpen=false; document.getElementById('ai-panel').style.display='none'; }
+function setAILoading(){
+  aiOpen=true;
+  const el=document.getElementById('ai-panel'); if(el)el.style.display='block';
+  document.getElementById('ai-body').innerHTML=`<div class="ai-loading"><div class="spin spin-dark"></div><div class="ai-loading-text"><p>Analysing room…</p><small>Detecting style and layout</small></div></div>`;
+}
+function showAIResult(){
+  const tip=AI_TIPS[Math.floor(Math.random()*AI_TIPS.length)];
+  document.getElementById('ai-body').innerHTML=`
+    <p class="ai-tip">${tip.tip}</p>
+    <p class="ai-palette-label">Suggested Palette</p>
+    <div class="ai-swatches">
+      ${tip.palette.map((c,i)=>`<div class="ai-swatch" style="background:${c}" title="${c}" onclick="${i<2?`setWall('${c}')`:`setFloor('${c}')`}"></div>`).join('')}
+      <button class="apply-btn" onclick="setWall('${tip.palette[0]}');setFloor('${tip.palette[1]}')">Apply →</button>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE DRAWER
+═══════════════════════════════════════════════════════════ */
+function openDrawer(){ drawerOpen=true; document.getElementById('mobile-drawer').classList.add('open'); renderFurnPanel('drawer-panel'); }
+function closeDrawer(){ drawerOpen=false; document.getElementById('mobile-drawer').classList.remove('open'); }
+
+/* ═══════════════════════════════════════════════════════════
+   SAVE DESIGN
+═══════════════════════════════════════════════════════════ */
+function saveDesign(){
+  if(!currentUser)return;
+  const btn=document.getElementById('save-btn');
+  btn.textContent='⏳ Saving…'; btn.disabled=true;
+  setTimeout(()=>{
+    const d={
+      id:designId,userId:currentUser.id,
+      name:document.getElementById('dr-name').value||'Untitled',
+      wallColor:drWall,floorColor:drFloor,brightness:drBright,warmth:drWarmth,lightType:drLight,
+      items:drItems,roomImg:roomImg,
+      thumbnail:roomImg||null,
+      updatedAt:new Date().toISOString(),
+      createdAt:new Date().toISOString()
+    };
+    let all=JSON.parse(localStorage.getItem('ds_all_designs')||'[]');
+    const idx=all.findIndex(x=>x.id===designId);
+    if(idx>=0)all[idx]=d; else all.push(d);
+    localStorage.setItem('ds_all_designs',JSON.stringify(all));
+    btn.textContent='✓ Saved'; btn.disabled=false;
+    showToast('Design saved!','ok');
+    setTimeout(()=>btn.textContent='💾 Save',2000);
+  },600);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════ */
+function showToast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=(type==='ok'?'✓ ':'')+msg;
+  t.className='toast '+type+' show';
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════════ */
+loadAuth();
+nav('home');
+</script>
+</body>
 </html>
+
