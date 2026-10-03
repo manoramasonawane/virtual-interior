@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LuxeSpace – Virtual Interior Design Studio</title>
+  <meta name="description" content="Design your dream home with LuxeSpace. Upload your room photo, drag & drop furniture, adjust lighting and colors."/>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    /* HERO */
+    .hero {
+      position: relative;
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #2c1810 0%, #4a3020 50%, #1a0f08 100%);
+    }
+    .hero-bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: url('https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1600') center/cover;
+      opacity: 0.3;
+      mix-blend-mode: luminosity;
+    }
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(26,15,8,0.95) 0%, rgba(26,15,8,0.7) 60%, transparent 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      max-width: 1200px; margin: 0 auto;
+      padding: 100px 40px 80px;
+      max-width: 640px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(184,137,58,0.2);
+      border: 1px solid rgba(184,137,58,0.4);
+      color: var(--primary);
+      padding: 6px 16px; border-radius: 100px;
+      font-size: 13px; font-weight: 600;
+      margin-bottom: 28px;
+    }
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 72px);
+      color: #fff;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+    .hero p {
+      font-size: 18px; color: rgba(255,255,255,0.7);
+      margin-bottom: 40px; line-height: 1.7;
+    }
+    .hero-cta { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    /* FEATURES */
+    .features { padding: 100px 40px; background: var(--bg-card); }
+    .section-title {
+      text-align: center; margin-bottom: 60px;
+    }
+    .section-title h2 { font-size: 42px; margin-bottom: 16px; }
+    .section-title p { color: var(--fg-muted); font-size: 17px; max-width: 600px; margin: 0 auto; }
+    .divider {
+      width: 60px; height: 3px;
+      background: var(--primary);
+      border-radius: 2px;
+      margin: 16px auto 0;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .feature-card {
+      padding: 36px 28px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      transition: all 0.3s ease;
+    }
+    .feature-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); border-color: var(--primary); }
+    .feature-icon {
+      font-size: 40px; margin-bottom: 20px;
+      display: inline-block;
+    }
+    .feature-card h3 { font-size: 22px; margin-bottom: 12px; }
+    .feature-card p { color: var(--fg-muted); line-height: 1.7; }
+
+    /* STEPS */
+    .steps { padding: 100px 40px; background: var(--bg); }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 32px;
+      max-width: 1100px; margin: 0 auto;
+    }
+    .step {
+      text-align: center;
+      padding: 28px;
+    }
+    .step-num {
+      width: 56px; height: 56px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700;
+      margin: 0 auto 20px;
+      font-family: var(--font-serif);
+    }
+    .step h3 { font-size: 19px; margin-bottom: 10px; }
+    .step p { color: var(--fg-muted); font-size: 14px; line-height: 1.7; }
+
+    /* TESTIMONIALS */
+    .testimonials { padding: 80px 40px; background: var(--bg-card); }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 28px;
+      max-width: 1100px; margin: 0 auto;
+    }
+    .testimonial {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .testimonial-text { font-style: italic; color: var(--fg-muted); margin-bottom: 20px; line-height: 1.7; }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 18px;
+    }
+    .stars { color: #f59e0b; font-size: 14px; margin-bottom: 6px; }
+
+    /* CTA SECTION */
+    .cta-section {
+      padding: 100px 40px;
+      text-align: center;
+      background: linear-gradient(135deg, #2c1810, #4a3020);
+      color: #fff;
+    }
+    .cta-section h2 { font-size: 48px; margin-bottom: 16px; color: #fff; }
+    .cta-section p { color: rgba(255,255,255,0.7); font-size: 18px; margin-bottom: 40px; }
+
+    /* FOOTER */
+    footer {
+      padding: 40px;
+      background: #1a0f08;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      font-size: 14px;
+    }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">⬡</div>
+      Luxe<span>Space</span>
+    </a>
+    <div class="nav-actions">
+      <select class="lang-select" aria-label="Language">
+        <option value="en">🌐 EN</option>
+        <option value="hi">हि HI</option>
+        <option value="es">ES</option>
+        <option value="fr">FR</option>
+        <option value="de">DE</option>
+      </select>
+      <a href="login.html"><button class="btn btn-ghost" data-i18n="login">Log In</button></a>
+      <a href="signup.html"><button class="btn btn-primary" data-i18n="signup">Sign Up</button></a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content" style="max-width:1200px;width:100%;padding:100px 40px 80px;margin:0 auto">
+    <div style="max-width:620px">
+      <div class="hero-badge">✦ Professional Virtual Studio</div>
+      <h1 data-i18n="hero_title">Design Your Dream Home</h1>
+      <p data-i18n="hero_subtitle">Visualize, furnish, and perfect your interior spaces with our professional virtual design studio.</p>
+      <div class="hero-cta">
+        <a href="signup.html"><button class="btn btn-primary btn-lg" data-i18n="start_designing">Start Designing</button></a>
+        <a href="login.html"><button class="btn btn-outline btn-lg" style="color:#fff;border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.1)" data-i18n="login">Log In</button></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-title">
+    <h2 data-i18n="features">Features</h2>
+    <div class="divider"></div>
+    <p style="margin-top:16px">Everything you need to design your perfect space</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📤</div>
+      <h3>Upload Your Room</h3>
+      <p>Upload any photo of your room and use it as the base for your design. Drag and drop or click to upload.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛋️</div>
+      <h3>Drag & Drop Furniture</h3>
+      <p>Choose from 24+ furniture items across 6 categories. Place, move, rotate and resize them freely on your canvas.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎨</div>
+      <h3>Color & Lighting</h3>
+      <p>Experiment with wall and floor colors using a full color picker. Adjust brightness and warmth sliders for any lighting mood.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💾</div>
+      <h3>Save & Manage</h3>
+      <p>Save unlimited designs to your account. Return to edit anytime from your personal dashboard.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⬇️</div>
+      <h3>Download HD</h3>
+      <p>Export your finished design as a high-resolution PNG image to share with contractors, family, or on social media.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <h3>Multilingual</h3>
+      <p>Available in English, Hindi, Spanish, French, and German — use the app in the language you're most comfortable with.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="steps">
+  <div class="section-title">
+    <h2>How It Works</h2>
+    <div class="divider"></div>
+  </div>
+  <div class="steps-grid">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Create Account</h3>
+      <p>Sign up for free in seconds. No credit card needed to get started.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Upload Your Room</h3>
+      <p>Take a photo of your room and upload it as the canvas background.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Design It</h3>
+      <p>Drag furniture, choose colors, and adjust lighting to your perfect vision.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>Save & Download</h3>
+      <p>Save your project and download a high-resolution image of your design.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div class="section-title">
+    <h2>What Our Users Say</h2>
+    <div class="divider"></div>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"I redesigned my entire living room using LuxeSpace before buying a single piece of furniture. Saved me from a costly mistake!"</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">P</div>
+        <div><strong>Priya Sharma</strong><br><small style="color:var(--fg-muted)">Interior Enthusiast</small></div>
+      </div>
+    </div>
+    <div class="testimonial">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"The drag-and-drop is so smooth and the lighting controls are incredible. This tool is way better than expensive alternatives."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">R</div>
+        <div><strong>Rahul Mehta</strong><br><small style="color:var(--fg-muted)">Architecture Student</small></div>
+      </div>
+    </div>
+    <div class="testimonial">
+      <div class="stars">★★★★★</div>
+      <p class="testimonial-text">"Hindi language support made this so accessible for my parents who helped pick furniture for their new home."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">A</div>
+        <div><strong>Ananya Patel</strong><br><small style="color:var(--fg-muted)">Home Owner</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Ready to Design?</h2>
+  <p>Join thousands of people designing their dream spaces right now.</p>
+  <a href="signup.html"><button class="btn btn-primary btn-lg" style="font-size:18px;padding:18px 40px" data-i18n="start_designing">Start Designing</button></a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2024 <strong style="color:var(--primary)">LuxeSpace</strong> · Virtual Interior Design System ·
+    <a href="index.html">Home</a> · <a href="login.html">Login</a> · <a href="signup.html">Sign Up</a>
+  </p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Log In – LuxeSpace</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    body { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+    .auth-image {
+      background: url('https://images.unsplash.com/photo-1618220179428-22790b461013?w=1200') center/cover;
+      position: relative;
+    }
+    .auth-image::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(26,15,8,0.7), transparent);
+    }
+    .auth-form-side {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 40px;
+      background: var(--bg);
+    }
+    .auth-box { width: 100%; max-width: 420px; }
+    .auth-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-serif); font-size: 22px; font-weight: 700;
+      margin-bottom: 44px; cursor: pointer;
+      text-decoration: none; color: var(--fg);
+    }
+    .auth-logo .logo-icon { width: 36px; height: 36px; border-radius: 9px; background: var(--primary); display:flex;align-items:center;justify-content:center;color:#fff; }
+    .auth-logo span { color: var(--primary); }
+    .auth-title { font-size: 36px; margin-bottom: 8px; }
+    .auth-sub { color: var(--fg-muted); margin-bottom: 36px; }
+    .auth-link { color: var(--primary); font-weight: 500; }
+    .auth-link:hover { text-decoration: underline; }
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      .auth-image { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-image"></div>
+
+<div class="auth-form-side">
+  <div class="auth-box">
+    <a href="index.html" class="auth-logo">
+      <div class="logo-icon">⬡</div>
+      Luxe<span>Space</span>
+    </a>
+
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-sub">Enter your credentials to access your designs.</p>
+
+    <div id="alert" class="alert alert-error" style="display:none"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="email" class="form-input" placeholder="you@example.com" required/>
+        <div id="email-error" class="form-error" style="display:none"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="••••••••" required/>
+        <div id="pwd-error" class="form-error" style="display:none"></div>
+      </div>
+      <button type="submit" id="submit-btn" class="btn btn-primary" style="width:100%;height:50px;font-size:16px;margin-top:8px">
+        Sign in →
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:28px;font-size:14px;color:var(--fg-muted)">
+      Don't have an account? <a href="signup.html" class="auth-link">Create one</a>
+    </p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  // Redirect if already logged in
+  checkAuth().then(user => {
+    if (user) window.location.href = 'dashboard.html';
+  });
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('submit-btn');
+    const alert = document.getElementById('alert');
+
+    // Basic validation
+    let valid = true;
+    if (!email.includes('@')) {
+      document.getElementById('email-error').textContent = 'Enter a valid email';
+      document.getElementById('email-error').style.display = 'block';
+      document.getElementById('email').classList.add('error');
+      valid = false;
+    } else {
+      document.getElementById('email-error').style.display = 'none';
+      document.getElementById('email').classList.remove('error');
+    }
+    if (password.length < 6) {
+      document.getElementById('pwd-error').textContent = 'Password must be at least 6 characters';
+      document.getElementById('pwd-error').style.display = 'block';
+      document.getElementById('password').classList.add('error');
+      valid = false;
+    } else {
+      document.getElementById('pwd-error').style.display = 'none';
+      document.getElementById('password').classList.remove('error');
+    }
+    if (!valid) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Signing in...';
+    alert.style.display = 'none';
+
+    try {
+      await loginUser(email, password);
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      alert.textContent = err.message;
+      alert.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = 'Sign in →';
+    }
+  });
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up – LuxeSpace</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    body { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+    .auth-image {
+      background: url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb3?w=1200') center/cover;
+      position: relative;
+    }
+    .auth-image::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(26,15,8,0.7), transparent);
+    }
+    .auth-form-side {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 40px;
+      background: var(--bg);
+    }
+    .auth-box { width: 100%; max-width: 420px; }
+    .auth-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-serif); font-size: 22px; font-weight: 700;
+      margin-bottom: 44px; text-decoration: none; color: var(--fg);
+    }
+    .auth-logo .logo-icon { width:36px;height:36px;border-radius:9px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff; }
+    .auth-logo span { color: var(--primary); }
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      .auth-image { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-form-side">
+  <div class="auth-box">
+    <a href="index.html" class="auth-logo">
+      <div class="logo-icon">⬡</div>
+      Luxe<span>Space</span>
+    </a>
+
+    <h1 style="font-size:36px;margin-bottom:8px">Create an account</h1>
+    <p style="color:var(--fg-muted);margin-bottom:36px">Start designing your perfect interior today.</p>
+
+    <div id="alert" class="alert alert-error" style="display:none"></div>
+
+    <form id="signup-form">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" id="name" class="form-input" placeholder="Priya Sharma" required/>
+        <div id="name-error" class="form-error" style="display:none"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="email" class="form-input" placeholder="you@example.com" required/>
+        <div id="email-error" class="form-error" style="display:none"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="••••••••" required/>
+        <div id="pwd-error" class="form-error" style="display:none"></div>
+      </div>
+      <button type="submit" id="submit-btn" class="btn btn-primary" style="width:100%;height:50px;font-size:16px;margin-top:8px">
+        Sign up →
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:28px;font-size:14px;color:var(--fg-muted)">
+      Already have an account? <a href="login.html" style="color:var(--primary);font-weight:500">Log in</a>
+    </p>
+  </div>
+</div>
+
+<div class="auth-image"></div>
+
+<script src="app.js"></script>
+<script>
+  checkAuth().then(user => { if (user) window.location.href = 'dashboard.html'; });
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+  }
+
+  document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('submit-btn');
+    const alertEl = document.getElementById('alert');
+    let valid = true;
+
+    if (name.length < 2) { showErr('name-error', 'Name must be at least 2 characters'); valid = false; }
+    else showErr('name-error', '');
+
+    if (!email.includes('@')) { showErr('email-error', 'Enter a valid email'); valid = false; }
+    else showErr('email-error', '');
+
+    if (password.length < 6) { showErr('pwd-error', 'Password must be at least 6 characters'); valid = false; }
+    else showErr('pwd-error', '');
+
+    if (!valid) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Creating account...';
+    alertEl.style.display = 'none';
+
+    try {
+      await registerUser(name, email, password);
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      alertEl.textContent = err.message;
+      alertEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = 'Sign up →';
+    }
+  });
+</script>
+</body>
+</html>
